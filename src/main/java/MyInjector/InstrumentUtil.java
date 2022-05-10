@@ -31,10 +31,7 @@ public class InstrumentUtil {
         Options.v().set_output_dir(outputPath);
         Scene.v().addBasicClass("java.io.PrintStream",SootClass.SIGNATURES);
         Scene.v().addBasicClass("java.lang.System",SootClass.SIGNATURES);
-        Scene.v().addBasicClass("dalvik.system.DexClassLoader",SootClass.SIGNATURES);
-        Scene.v().addBasicClass("java.lang.Class[]",SootClass.HIERARCHY);  
-        Scene.v().addBasicClass("java.lang.String[]",SootClass.HIERARCHY);  
-        Scene.v().addBasicClass("android.graphics.Bitmap[]",SootClass.HIERARCHY);
+//        Scene.v().addBasicClass("dalvik.system.DexClassLoader",SootClass.SIGNATURES);
         Scene.v().loadNecessaryClasses();
     }
 
