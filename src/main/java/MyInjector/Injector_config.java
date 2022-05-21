@@ -19,7 +19,7 @@ public class Injector_config extends BodyTransformer {
 	final static String INJECTOR_ADDON_PATH = "/data/local/tmp/InjectorAddOn.apk";
 	final static String ADD_ON_MAIN_CLASS = "com.example.injectoraddon.InjectorAddOn";
 	static boolean isClassAnalize = true;
-	static boolean isMethodAnalize = true;
+	static boolean isMethodAnalize = false;
 	static boolean isInsert = true;
 	static int MAINACTIVITY_INDEX = 1386;
 
@@ -32,7 +32,7 @@ public class Injector_config extends BodyTransformer {
 		JimpleBody body = (JimpleBody) b;
 		if (AndroidUtil.isAndroidMethod(b.getMethod()))
 			return;
-
+////
 		if (isClassAnalize) {
 			isClassAnalize = false;
 			printClasses(body);
@@ -40,35 +40,35 @@ public class Injector_config extends BodyTransformer {
 		if (isMethodAnalize) {
 			printMethods(body);
 		}
+// ////
+ 		if (isInsert) {
+ 			isInsert = false;
+ 			Object[] arr = Scene.v().getApplicationClasses().toArray();
+ 			SootClass a = (SootClass) arr[MAINACTIVITY_INDEX];// MainActivity
 
-		if (isInsert) {
-			isInsert = false;
-			Object[] arr = Scene.v().getApplicationClasses().toArray();
-			SootClass a = (SootClass) arr[MAINACTIVITY_INDEX];// MainActivity
+ 			SootField testField = InstrumentUtil.addField(a, "dex", RefType.v("dalvik.system.DexClassLoader"),
+ 					Modifier.PUBLIC | Modifier.STATIC);
 
-			SootField testField = InstrumentUtil.addField(a, "dex", RefType.v("dalvik.system.DexClassLoader"),
-					Modifier.PUBLIC | Modifier.STATIC);
-
-		}
-
-		if (b.getMethod().getName().equals("onCreate")) {
-			System.out.println("==== before ====");
-			System.out.println(b);
-			inject_onCreate((JimpleBody) b);
-			// injectfield((JimpleBody) b);
-			// injectClassLoader((JimpleBody) b);
-			System.out.println("==== after ====");
-			System.out.println(b);
-		}
-		if (b.getMethod().getName().equals("onClick")) {
-			System.out.println("==== before ====");
-			System.out.println(b);
-			inject_onClick((JimpleBody) b);
-			// injectfield((JimpleBody) b);
-			// injectClassLoader((JimpleBody) b);
-			System.out.println("==== after ====");
-			System.out.println(b);
-		}
+ 		}
+// ////
+ 		if (b.getMethod().getName().equals("onCreate")) {
+ 			System.out.println("==== before ====");
+ 			System.out.println(b);
+ 			inject_onCreate((JimpleBody) b);
+ //			// injectfield((JimpleBody) b);
+ //			// injectClassLoader((JimpleBody) b);
+ 			System.out.println("==== after ====");
+ 			System.out.println(b);
+ 		}
+ 		if (b.getMethod().getName().equals("onClick")) {
+ 			System.out.println("==== before ====");
+ 			System.out.println(b);
+ 			inject_onClick((JimpleBody) b);
+// ////			// injectfield((JimpleBody) b);
+// ////			// injectClassLoader((JimpleBody) b);
+ 			System.out.println("==== after ====");
+ 			System.out.println(b);
+ 		}
 	}
 
 	void inject_onCreate(JimpleBody body) {
@@ -80,7 +80,7 @@ public class Injector_config extends BodyTransformer {
 		Local dexLoaderVar = InstrumentUtil.generateNewLocal(body, RefType.v("dalvik.system.DexClassLoader"));
 		Local classVar = InstrumentUtil.generateNewLocal(body, RefType.v("java.lang.Class"));
 		Local classLoaderVar = InstrumentUtil.generateNewLocal(body, RefType.v("java.lang.ClassLoader"));
-
+		
 		// create DexClassLoader instance
 		generated.addAll(InstrumentUtil.generateVirtualInvokeStmt(body, "java.lang.Object",
 				"java.lang.Class getClass()", thisVar, classVar));
@@ -90,12 +90,14 @@ public class Injector_config extends BodyTransformer {
 				"void <init>(java.lang.String,java.lang.String,java.lang.String,java.lang.ClassLoader)", dexLoaderVar,
 				StringConstant.v(INJECTOR_ADDON_PATH), StringConstant.v(TMP_DIR_PATH), NullConstant.v(),
 				classLoaderVar));
+		
 		// copy dexLoaderVar to this.dex field
 		Object[] arr = Scene.v().getApplicationClasses().toArray();
 		SootClass a = (SootClass) arr[MAINACTIVITY_INDEX];
 		SootField ar = a.getFieldByName("dex");
+		
 		generated.add(Jimple.v().newAssignStmt(Jimple.v().newStaticFieldRef(ar.makeRef()), dexLoaderVar));
-
+		
 		units.insertBefore(generated, units.getLast());
 
 		// validate the instrumented code
@@ -106,6 +108,7 @@ public class Injector_config extends BodyTransformer {
 		UnitPatchingChain units = body.getUnits();
 		List<Unit> generated = new ArrayList<>();
 		printLocals(body);
+		Local thisVar = body.getThisLocal();
 		Local exceptionVar = InstrumentUtil.generateNewLocal(body, RefType.v("java.lang.Exception"));
 		Local methodVar = InstrumentUtil.generateNewLocal(body, RefType.v("java.lang.reflect.Method"));
 		Local dexLoaderVar = InstrumentUtil.generateNewLocal(body, RefType.v("dalvik.system.DexClassLoader"));
@@ -126,10 +129,11 @@ public class Injector_config extends BodyTransformer {
 		Object[] classArr = Scene.v().getApplicationClasses().toArray();
 		SootClass classMainActivity = (SootClass) classArr[MAINACTIVITY_INDEX];
 		SootField dexVar = classMainActivity.getFieldByName("dex");
+//		SootField edit1 = classMainActivity.getFieldBymuxName("edit1");
 //		SootField edit
 		generated.add(Jimple.v().newAssignStmt(dexLoaderVar, Jimple.v().newStaticFieldRef(dexVar.makeRef())));
 		
-		
+		//generated.add(Jimple.v().newAssignStmt(edit1Var, Jimple.v().newInstanceFieldRef(thisVar,edit1.makeRef())));
 //		generated.add(Jimple.v().newAssignStmt(thisMainActivityVar, body.getThisLocal()));
 
 		generated.addAll(InstrumentUtil.generateStaticInvokeStmt(body, "com.example.testapp.MainActivity", "android.widget.EditText access$000(com.example.testapp.MainActivity)", edit1Var, thisMainActivityVar));
@@ -160,6 +164,7 @@ public class Injector_config extends BodyTransformer {
 				"java.lang.reflect.Method getDeclaredMethod(java.lang.String,java.lang.Class[])", classVar, methodVar,
 				StringConstant.v("runtest"), classArrayVar));
 		
+		
 		// create object array for invoke
 		SootClass cls2 = Scene.v().getSootClass("java.lang.Object");
 		generated.add(
@@ -172,13 +177,14 @@ public class Injector_config extends BodyTransformer {
 		generated.addAll(InstrumentUtil.generateVirtualInvokeStmt(body, "java.lang.reflect.Method",
 				"java.lang.Object invoke(java.lang.Object,java.lang.Object[])", methodVar, resultObjectVar, NullConstant.v(),
 				objectArrayVar));
-		
+		//Jimple.v().
 		generated.add(Jimple.v().newAssignStmt(resultVar, Jimple.v().newCastExpr(resultObjectVar, resultVar.getType())));
 		//prepare result Stringf
 		generated.addAll(InstrumentUtil.generateVirtualInvokeStmt(body, "java.lang.Float", "java.lang.String toString()", resultVar, resultCharseqVar));
 		// edit3.setText
 		generated.addAll(InstrumentUtil.generateVirtualInvokeStmt(body, "android.widget.TextView", "void setText(java.lang.CharSequence)", edit3Var, null, resultCharseqVar));
-		units.insertBefore(generated, units.getPredOf(units.getLast()));
+		units.insertBefore(generated, (units.getLast()));
+		
  
 		Unit tryEnd = (units.getLast());
         // insert try-catch statement
@@ -191,8 +197,9 @@ public class Injector_config extends BodyTransformer {
         SootClass exceptionClass = Scene.v().getSootClass("java.lang.Exception");
         Trap trap = soot.jimple.Jimple.v().newTrap(exceptionClass, tryBegin, tryEnd, catchBegin);
         body.getTraps().add(trap);
-        System.out.println(body.toString());
-        printLocals(body);
+        
+        //System.out.println(body.toString());
+//        printLocals(body);
 		// validate the instrumented code
 		body.validate();
 	}
